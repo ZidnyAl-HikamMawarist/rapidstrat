@@ -7,7 +7,7 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6">
 
-    <div class="p-6 md:p-8 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-xl">
+    <div class="p-6 md:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
         <form action="{{ $action }}" method="POST" class="space-y-5">
             @csrf
             @if($isEdit)
@@ -16,15 +16,15 @@
 
             <!-- Contoh Input Text: Nama -->
             <div>
-                <label for="nama" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                    Nama Data <span class="text-rose-400">*</span>
+                <label for="nama" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
+                    Nama Data <span class="text-rose-500">*</span>
                 </label>
                 <input type="text" id="nama" name="nama"
                        value="{{ old('nama', $item->name ?? '') }}" required autofocus
                        placeholder="Contoh: Nama Barang / Buku / Kategori"
-                       class="w-full px-4 py-2.5 bg-slate-950/60 border @error('nama') border-rose-500/60 ring-1 ring-rose-500/40 @else border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 @enderror rounded-xl text-slate-200 text-sm outline-none transition">
+                       class="w-full px-4 py-2.5 bg-slate-50 border @error('nama') border-rose-500 ring-1 ring-rose-500/20 @else border-slate-300 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 @enderror rounded-xl text-slate-800 text-sm outline-none transition font-medium">
                 @error('nama')
-                    <p class="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
+                    <p class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 font-medium">
                         <i class="fa-solid fa-circle-exclamation"></i> {{ $message }}
                     </p>
                 @enderror
@@ -32,11 +32,11 @@
 
             <!-- Contoh Input Select (Relasi Kategori / Status) -->
             <div>
-                <label for="kategori_id" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                <label for="kategori_id" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
                     Pilih Kategori / Relasi (Opsional)
                 </label>
                 <select id="kategori_id" name="kategori_id"
-                        class="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition">
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition font-medium">
                     <option value="">-- Pilih Salah Satu --</option>
                     <option value="1">Kategori Utama</option>
                     <option value="2">Kategori Sekunder</option>
@@ -45,22 +45,22 @@
 
             <!-- Contoh Input Textarea: Keterangan -->
             <div>
-                <label for="keterangan" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                <label for="keterangan" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
                     Keterangan Tambahan
                 </label>
                 <textarea id="keterangan" name="keterangan" rows="4"
                           placeholder="Tulis deskripsi atau catatan di sini..."
-                          class="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-200 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition">{{ old('keterangan', $item->keterangan ?? '') }}</textarea>
+                          class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition font-medium">{{ old('keterangan', $item->keterangan ?? '') }}</textarea>
             </div>
 
             <!-- Action Buttons -->
-            <div class="pt-4 border-t border-slate-800/80 flex items-center justify-end gap-3">
+            <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
                 <a href="{{ route('master.index') }}"
-                   class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition border border-slate-700">
+                   class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition border border-slate-200">
                     Batal
                 </a>
                 <button type="submit"
-                        class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/25 transition flex items-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i>
                     <span>Simpan Perubahan</span>
                 </button>
