@@ -91,9 +91,20 @@ class InstallCommand extends Command
         $this->line("<fg=gray>  Created by Zidny Al-Hikam Mawarist | Versi 1.0.0</>\n");
     }
 
+    protected function runTask($description, $callback)
+    {
+        if (isset($this->components)) {
+            $this->components->task($description, $callback);
+        } else {
+            $this->info("⏳ {$description}");
+            $callback();
+            $this->info("✓ Selesai.");
+        }
+    }
+
     protected function installAuth()
     {
-        $this->task('Menginstal Autentikasi & Multi-Role...', function () {
+        $this->runTask('Menginstal Autentikasi & Multi-Role...', function () {
             // 1. Controller
             File::ensureDirectoryExists(app_path('Http/Controllers'));
             File::copy(
@@ -175,7 +186,7 @@ class InstallCommand extends Command
 
     protected function installDashboard()
     {
-        $this->task('Menginstal Admin Layout & Tailwind Dashboard...', function () {
+        $this->runTask('Menginstal Admin Layout & Tailwind Dashboard...', function () {
             // 1. Controller
             File::copy(
                 __DIR__ . '/../stubs/dashboard/Controllers/DashboardController.php.stub',
@@ -204,7 +215,7 @@ class InstallCommand extends Command
 
     protected function installReports()
     {
-        $this->task('Menginstal Engine Laporan PDF & Filter...', function () {
+        $this->runTask('Menginstal Engine Laporan PDF & Filter...', function () {
             File::copy(
                 __DIR__ . '/../stubs/report/Controllers/ReportController.php.stub',
                 app_path('Http/Controllers/ReportController.php')
@@ -224,7 +235,7 @@ class InstallCommand extends Command
 
     protected function installCrudStubs()
     {
-        $this->task('Menyiapkan Stubs CRUD Blueprint...', function () {
+        $this->runTask('Menyiapkan Stubs CRUD Blueprint...', function () {
             File::ensureDirectoryExists(resource_path('views/master'));
             File::copy(
                 __DIR__ . '/../stubs/crud/index.blade.php.stub',
@@ -243,7 +254,7 @@ class InstallCommand extends Command
 
     protected function installDocumentation()
     {
-        $this->task('Membuat PANDUAN_UJIKOM.md di root project...', function () {
+        $this->runTask('Membuat PANDUAN_UJIKOM.md di root project...', function () {
             File::copy(
                 __DIR__ . '/../stubs/docs/PANDUAN_UJIKOM.md',
                 base_path('PANDUAN_UJIKOM.md')
