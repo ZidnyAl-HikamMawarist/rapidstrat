@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class ReportController extends Controller
+{
+    /**
+     * Tampilkan halaman filter laporan.
+     */
+    public function index(Request $request)
+    {
+        $startDate = $request->input('start_date', date('Y-m-01'));
+        $endDate   = $request->input('end_date', date('Y-m-d'));
+
+        // Query data berdasarkan filter tanggal
+        // CATATAN UJIKOM: Ganti User::query() dengan Model Transaksi kamu (misal: Peminjaman::query(), Transaksi::query(), Pengaduan::query())
+        $query = User::query();
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('created_at', [
+                $startDate . ' 00:00:00',
+                $endDate . ' 23:59:59'
+            ]);
+        }
+
+        $records = $query->latest()->paginate(15)->withQueryString();
+
+        return view('reports.index', compact('records', 'startDate', 'endDate'));
+    }
+
+    /**
+     * Export data ke file PDF menggunakan DomPDF.
+     */
+    public function exportPdf(Request $request)
+    {
+        $startDate = $request->input('start_date', date('Y-m-01'));
+        $endDate   = $request->input('end_date', date('Y-m-d'));
+
+        // Ganti User::query() dengan Model Transaksi kamu
+        $query = User::query();
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('created_at', [
+                $startDate . ' 00:00:00',
+                $endDate . ' 23:59:59'
+            ]);
+        }
+
+        $records = $query->latest()->get();
+
+        // Cek apakah package DomPDF terpasang
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $pdf = Pdf::loadView('reports.pdf_template', compact('records', 'startDate', 'endDate'))
+                      ->setPaper('a4', 'portrait');
+
+            return $pdf->download("laporan-rekapitulasi-{$startDate}-sd-{$endDate}.pdf");
+        }
+
+        // Fallback jika DomPDF belum di-install: arahkan ke tampilan print browser
+        return view('reports.pdf_template', compact('records', 'startDate', 'endDate'));
+    }
+
+    /**
+     * Tampilan cetak langsung via Browser (window.print).
+     */
+    public function printView(Request $request)
+    {
+        $startDate = $request->input('start_date', date('Y-m-01'));
+        $endDate   = $request->input('end_date', date('Y-m-d'));
+
+        $records = User::whereBetween('created_at', [
+            $startDate . ' 00:00:00',
+            $endDate . ' 23:59:59'
+        ])->latest()->get();
+
+        return view('reports.pdf_template', compact('records', 'startDate', 'endDate'));
+    }
+}

@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+
+class DashboardController extends Controller
+{
+    /**
+     * Dashboard untuk Administrator dan Petugas.
+     */
+    public function adminDashboard()
+    {
+        $user = auth()->user();
+
+        // Data statistik contoh (bisa dihubungkan ke Model saat Ujikom)
+        $stats = [
+            'total_users'     => User::count(),
+            'total_petugas'   => User::where('role', 'petugas')->count(),
+            'total_transaksi' => 128, // Placeholder: ganti dengan Model::count()
+            'total_pending'   => 14,  // Placeholder: ganti dengan status pending
+        ];
+
+        return view('admin.dashboard', compact('user', 'stats'));
+    }
+
+    /**
+     * Dashboard untuk Pengguna Publik / Siswa / Pelanggan.
+     */
+    public function userDashboard()
+    {
+        $user = auth()->user();
+
+        return view('user.dashboard', compact('user'));
+    }
+}
