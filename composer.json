@@ -11,8 +11,8 @@
     ],
     "require": {
         "php": "^8.2",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "illuminate/console": "^10.0|^11.0|^12.0"
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/console": "^10.0|^11.0|^12.0|^13.0"
     },
     "suggest": {
         "barryvdh/laravel-dompdf": "Diperlukan untuk fitur cetak laporan PDF (composer require barryvdh/laravel-dompdf)"
