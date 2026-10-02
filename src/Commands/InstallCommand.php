@@ -135,6 +135,9 @@ class InstallCommand extends Command
 
             // 6. Update User model fillable
             $this->updateUserModel();
+
+            // 7. Auto register middleware alias in bootstrap/app.php
+            $this->registerMiddlewareInBootstrap();
         });
     }
 
@@ -150,6 +153,22 @@ class InstallCommand extends Command
                     $content
                 );
                 File::put($userModelPath, $content);
+            }
+        }
+    }
+
+    protected function registerMiddlewareInBootstrap()
+    {
+        $bootstrapApp = base_path('bootstrap/app.php');
+        if (File::exists($bootstrapApp)) {
+            $content = File::get($bootstrapApp);
+            if (!str_contains($content, "'role'")) {
+                $pattern = '/->withMiddleware\s*\(\s*function\s*\(\s*Middleware\s*\$middleware\s*\)(?:\s*:\s*\w+)?\s*\{/';
+                if (preg_match($pattern, $content, $matches)) {
+                    $replacement = $matches[0] . "\n        \$middleware->alias([\n            'role' => \\App\\Http\\Middleware\\CheckRole::class,\n        ]);";
+                    $content = str_replace($matches[0], $replacement, $content);
+                    File::put($bootstrapApp, $content);
+                }
             }
         }
     }
