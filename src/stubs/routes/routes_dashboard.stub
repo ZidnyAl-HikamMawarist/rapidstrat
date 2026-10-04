@@ -1,0 +1,15 @@
+
+// =========================================================================
+// 🖥️ RUTE DASHBOARD MULTI-ROLE (RAPIDSTRAT)
+// =========================================================================
+use App\Http\Controllers\DashboardController;
+
+// Dashboard Admin & Petugas
+Route::middleware(['auth', 'role:admin,petugas'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])->name('dashboard');
+});
+
+// Dashboard User Biasa / Siswa / Pelanggan
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
+});

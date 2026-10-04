@@ -7,110 +7,147 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * ============================================================================
+ * CONTROLLER AUTENTIKASI MULTI-ROLE
+ * ============================================================================
+ * Menangani seluruh alur siklus autentikasi pengguna:
+ * - Tampilan Form Login & Register
+ * - Verifikasi Kredensial & Pembuatan Session (Login)
+ * - Registrasi Pengguna Baru dengan Hashing Password Aman
+ * - Penghancuran Session & Regenerasi Token (Logout)
+ * - Pengalihan (Redirect) Otomatis Berdasarkan Hak Akses (Role)
+ * ============================================================================
+ */
 class AuthController extends Controller
 {
     /**
-     * Tampilkan form login.
+     * Menampilkan antarmuka formulir login.
+     * Rute ini dilindungi middleware 'guest' sehingga pengguna yang sudah
+     * login tidak akan bisa mengakses halaman ini lagi.
+     * 
+     * @return \Illuminate\View\View
      */
     public function showLogin()
     {
-        if (Auth::check()) {
-            return $this->redirectByRole(Auth::user());
-        }
-
         return view('auth.login');
     }
 
     /**
-     * Proses autentikasi login.
+     * Memproses upaya autentikasi pengguna.
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function login(Request $request)
     {
+        // 1. Validasi input: memastikan format email dan kelengkapan password
         $credentials = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
         ], [
-            'email.required'    => 'Email wajib diisi.',
-            'email.email'       => 'Format email tidak valid.',
-            'password.required' => 'Password wajib diisi.',
+            'email.required'    => 'Alamat email wajib diisi.',
+            'email.email'       => 'Format email tidak valid (contoh: user@mail.com).',
+            'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
         $remember = $request->boolean('remember');
 
+        // 2. Upaya autentikasi menggunakan Auth::attempt()
+        // Fungsi ini otomatis membandingkan hash Bcrypt password dengan aman
         if (Auth::attempt($credentials, $remember)) {
+            // Mencegah serangan Session Fixation dengan meregenerasi ID sesi
             $request->session()->regenerate();
 
             $user = Auth::user();
+
+            // Alihkan pengguna ke dashboard yang sesuai dengan hak akses (role) miliknya
             return $this->redirectByRole($user)->with('success', "Selamat datang kembali, {$user->name}!");
         }
 
+        // 3. Jika autentikasi gagal, kembalikan dengan pesan error dan pertahankan input email
         return back()->withErrors([
-            'email' => 'Email atau password yang Anda masukkan salah.',
+            'email' => 'Kombinasi email dan password yang Anda masukkan tidak cocok.',
         ])->onlyInput('email');
     }
 
     /**
-     * Tampilkan form registrasi.
+     * Menampilkan antarmuka formulir pendaftaran akun baru.
+     * 
+     * @return \Illuminate\View\View
      */
     public function showRegister()
     {
-        if (Auth::check()) {
-            return $this->redirectByRole(Auth::user());
-        }
-
         return view('auth.register');
     }
 
     /**
-     * Proses registrasi akun baru (default role: user).
+     * Memproses pendaftaran akun baru.
+     * Secara bawaan, akun baru akan diberikan role 'user' (Siswa / Pelanggan).
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function register(Request $request)
     {
+        // 1. Validasi data pendaftaran
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ], [
             'name.required'      => 'Nama lengkap wajib diisi.',
             'email.required'     => 'Email wajib diisi.',
-            'email.unique'       => 'Email sudah terdaftar.',
+            'email.unique'       => 'Alamat email ini sudah terdaftar sebelumnya.',
             'password.required'  => 'Password wajib diisi.',
-            'password.min'       => 'Password minimal 6 karakter.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.min'       => 'Password minimal harus terdiri dari 6 karakter.',
+            'password.confirmed' => 'Konfirmasi pengulangan password tidak cocok.',
         ]);
 
+        // 2. Simpan user baru ke database dengan password ter-enkripsi Bcrypt
         $user = User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role'     => 'user', // Default role untuk registrasi mandiri
+            'role'     => 'user', // Role default untuk pendaftaran mandiri
         ]);
 
+        // 3. Langsung login-kan user yang baru mendaftar
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang!');
+        return redirect()->route('dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang di sistem!');
     }
 
     /**
-     * Logout user & hapus session.
+     * Menghancurkan sesi pengguna aktif (Logout).
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function logout(Request $request)
     {
+        // 1. Keluarkan pengguna dari sistem autentikasi
         Auth::logout();
 
+        // 2. Hancurkan seluruh data sesi dan regenerasi token CSRF untuk keamanan
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')->with('success', 'Anda telah berhasil logout.');
+        return redirect()->route('login')->with('success', 'Anda telah berhasil keluar dari sistem.');
     }
 
     /**
-     * Helper redirect berdasarkan role.
+     * Helper Helper: Menentukan rute tujuan berdasarkan role akun yang login.
+     * - admin / petugas  -> /admin/dashboard
+     * - user / lainnya   -> /dashboard
+     * 
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Http\RedirectResponse
      */
     protected function redirectByRole($user)
     {
-        if (in_array($user->role, ['admin', 'petugas'])) {
+        if (in_array($user->role, ['admin', 'petugas'], true)) {
             return redirect()->route('admin.dashboard');
         }
 

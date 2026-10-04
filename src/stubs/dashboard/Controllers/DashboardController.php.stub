@@ -5,21 +5,35 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 
+/**
+ * ============================================================================
+ * CONTROLLER DASHBOARD PENGGUNA & ADMIN
+ * ============================================================================
+ * Mengatur pemisahan halaman beranda sistem sesuai hak akses:
+ * 1. adminDashboard() : Menghitung KPI / kartu ringkasan data dan statistik
+ * 2. userDashboard()  : Menampilkan halaman portal ramah pengguna publik/siswa
+ * ============================================================================
+ */
 class DashboardController extends Controller
 {
     /**
      * Dashboard untuk Administrator dan Petugas.
+     * Mengkalkulasi data ringkasan KPI untuk ditampilkan pada kartu statistik.
+     * 
+     * @return \Illuminate\View\View
      */
     public function adminDashboard()
     {
         $user = auth()->user();
 
-        // Data statistik contoh (bisa dihubungkan ke Model saat Ujikom)
+        // Data statistik ringkasan (KPI Cards)
+        // 💡 TIPS UJIKOM: Sambungkan angka-angka ini ke Model kamu, misal:
+        // 'total_buku' => Book::count(), 'total_pinjam' => Loan::count()
         $stats = [
             'total_users'     => User::count(),
             'total_petugas'   => User::where('role', 'petugas')->count(),
-            'total_transaksi' => 128, // Placeholder: ganti dengan Model::count()
-            'total_pending'   => 14,  // Placeholder: ganti dengan status pending
+            'total_transaksi' => 128, // Placeholder: ganti dengan ModelTransaksi::count()
+            'total_pending'   => 14,  // Placeholder: ganti dengan ModelTransaksi::where('status', 'pending')->count()
         ];
 
         return view('admin.dashboard', compact('user', 'stats'));
@@ -27,6 +41,8 @@ class DashboardController extends Controller
 
     /**
      * Dashboard untuk Pengguna Publik / Siswa / Pelanggan.
+     * 
+     * @return \Illuminate\View\View
      */
     public function userDashboard()
     {

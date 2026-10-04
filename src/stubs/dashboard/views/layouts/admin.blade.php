@@ -3,28 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Dashboard') - Admin Panel</title>
-    <!-- Tailwind CSS CDN -->
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>@yield('title', 'Dashboard') - Panel Manajemen</title>
+
+    {{-- 
+        =======================================================================
+        ASSET CDN (TAILWIND, FONTS, FONT AWESOME & SWEETALERT2)
+        =======================================================================
+        💡 TIPS UJIKOM OFFLINE:
+        Jika laboratorium sekolah tidak memiliki akses internet saat ujian,
+        Anda bisa mengunduh file tailwind.css, fontawesome, dan sweetalert2.js
+        ke folder public/ lalu memanggilnya menggunakan asset('css/...')
+        =======================================================================
+    --}}
+    <!-- Tailwind CSS CDN (Play CDN untuk kemudahan prototyping) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Typography: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome 6 Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SweetAlert2 Interactive Popups -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
+        /* Standarisasi Font Utama Sistem */
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
+
+    {{-- Slot stylesheet kustom dari halaman anak --}}
     @stack('styles')
 </head>
 <body class="h-full bg-slate-50 text-slate-800 flex overflow-hidden">
 
-    <!-- Mobile Sidebar Backdrop -->
+    {{-- Latar Gelap Mobile (Menutup sidebar saat diklik di luar area pada layar ponsel) --}}
     <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
-    <!-- SIDEBAR -->
+    {{-- 
+        =======================================================================
+        KOMPONEN: SIDEBAR NAVIGASI KIRI
+        =======================================================================
+    --}}
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/90 shadow-sm flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
         <div>
-            <!-- Brand Logo: Hanya Admin Panel (Tanpa kata Laravel) -->
+            <!-- Brand Logo & Nama Aplikasi -->
             <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-indigo-600/20">
@@ -35,25 +61,26 @@
                         <span class="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider block">Sistem Manajemen</span>
                     </div>
                 </a>
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-700">
+                <!-- Tombol Close Sidebar (Hanya tampil di Mobile) -->
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-700" title="Tutup Menu">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- Navigation Links -->
+            <!-- Daftar Menu Navigasi -->
             <nav class="p-4 space-y-1">
                 <p class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Utama</p>
 
-                <!-- Dashboard Link -->
+                <!-- Menu Dashboard -->
                 <a href="{{ route('admin.dashboard') }}"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900' }}">
                     <i class="fa-solid fa-chart-pie w-5 text-center text-sm {{ request()->routeIs('admin.dashboard') ? 'text-white' : 'text-slate-400' }}"></i>
                     <span>Dashboard</span>
                 </a>
 
-                <p class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-5 mb-2">Manajemen & Transaksi</p>
+                <p class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-5 mb-2">Manajemen & Data</p>
 
-                <!-- Menu Master Data -->
+                <!-- Menu Master Data (Otomatis Aktif jika Rute Tersedia) -->
                 @if(Route::has('master.index'))
                 <a href="{{ route('master.index') }}"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('master.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900' }}">
@@ -62,7 +89,7 @@
                 </a>
                 @endif
 
-                <!-- Menu Transaksi -->
+                <!-- Menu Transaksi (Opsional untuk Soal Kasir / Peminjaman) -->
                 @if(Route::has('transaksi.index'))
                 <a href="{{ route('transaksi.index') }}"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('transaksi.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900' }}">
@@ -73,7 +100,7 @@
 
                 <p class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-5 mb-2">Laporan</p>
 
-                <!-- Menu Laporan -->
+                <!-- Menu Cetak Laporan PDF -->
                 @if(Route::has('reports.index'))
                 <a href="{{ route('reports.index') }}"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('reports.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900' }}">
@@ -84,7 +111,7 @@
             </nav>
         </div>
 
-        <!-- Sidebar Bottom Footer -->
+        <!-- Tombol Logout di Bawah Sidebar -->
         <div class="p-4 border-t border-slate-100">
             <button onclick="confirmLogout()" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 transition border border-rose-100">
                 <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
@@ -96,12 +123,17 @@
         </div>
     </aside>
 
-    <!-- MAIN WRAPPER -->
+    {{-- 
+        =======================================================================
+        KOMPONEN: WRAPPER KONTEN UTAMA & HEADER
+        =======================================================================
+    --}}
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
         <!-- TOP NAVBAR -->
         <header class="h-16 bg-white border-b border-slate-200/80 shadow-sm flex items-center justify-between px-4 md:px-8 z-10">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-100">
+                <!-- Hamburger Menu Mobile Button -->
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-slate-800 p-2 rounded-lg hover:bg-slate-100" title="Buka Menu">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
                 <div>
@@ -110,15 +142,15 @@
                 </div>
             </div>
 
-            <!-- BAGIAN POJOK KANAN ATAS: Status Sistem + User Profile Pill Lengkap -->
+            <!-- SISI KANAN ATAS: Status Sistem & Pill Profil Pengguna -->
             <div class="flex items-center gap-3">
-                <!-- Status Badge -->
+                <!-- Indikator Status Sistem -->
                 <span class="hidden lg:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Sistem Aktif
                 </span>
 
-                <!-- Profil Pengguna (Dipindah ke Pojok Kanan Atas) -->
+                <!-- Info Akun yang Sedang Login -->
                 <div class="flex items-center gap-3 pl-3 border-l border-slate-200">
                     <div class="flex items-center gap-2.5">
                         <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center font-bold text-xs shadow-sm">
@@ -133,7 +165,7 @@
                         </div>
                     </div>
 
-                    <!-- Tombol Power / Logout Cepat -->
+                    <!-- Tombol Cepat Logout (Power Off) -->
                     <button onclick="confirmLogout()" title="Keluar Akun"
                             class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition border border-transparent hover:border-rose-100">
                         <i class="fa-solid fa-power-off text-sm"></i>
@@ -142,14 +174,19 @@
             </div>
         </header>
 
-        <!-- PAGE CONTENT -->
+        <!-- AREA KONTEN HALAMAN UTAMA -->
         <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
             @yield('content')
         </main>
     </div>
 
-    <!-- SweetAlert2 Notification Handler -->
+    {{-- 
+        =======================================================================
+        JAVASCRIPT: SWEETALERT2 NOTIFIKASI & INTERAKTIVITAS
+        =======================================================================
+    --}}
     <script>
+        // 1. Toggle Sidebar untuk Mode Tampilan Mobile
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebar-backdrop');
@@ -157,10 +194,11 @@
             backdrop.classList.toggle('hidden');
         }
 
+        // 2. Konfirmasi Keluar Akun dengan Modal Interaktif
         function confirmLogout() {
             Swal.fire({
                 title: 'Konfirmasi Keluar?',
-                text: "Sesi Anda akan diakhiri.",
+                text: "Sesi login Anda akan diakhiri.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#4f46e5',
@@ -176,6 +214,7 @@
             });
         }
 
+        // 3. Notifikasi Berhasil (Flash Session 'success')
         @if(session('success'))
             Swal.fire({
                 icon: 'success',
@@ -189,17 +228,32 @@
             });
         @endif
 
+        // 4. Notifikasi Gagal (Flash Session 'error')
         @if(session('error'))
             Swal.fire({
                 icon: 'error',
-                title: 'Gagal!',
+                title: 'Terjadi Kesalahan!',
                 text: "{{ session('error') }}",
                 background: '#ffffff',
                 color: '#1e293b',
                 confirmButtonColor: '#e11d48'
             });
         @endif
+
+        // 5. Notifikasi Kesalahan Validasi Form (Pesan Error Form Input)
+        @if($errors->any())
+            Swal.fire({
+                icon: 'warning',
+                title: 'Periksa Formulir Anda!',
+                html: '<div class="text-left text-xs space-y-1">{!! implode("<br>• ", $errors->all()) !!}</div>',
+                background: '#ffffff',
+                color: '#1e293b',
+                confirmButtonColor: '#e11d48'
+            });
+        @endif
     </script>
+
+    {{-- Slot script kustom dari halaman anak --}}
     @stack('scripts')
 </body>
 </html>

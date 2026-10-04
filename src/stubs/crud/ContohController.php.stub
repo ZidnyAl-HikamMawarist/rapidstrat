@@ -3,38 +3,65 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-// Ganti 'ContohModel' dengan Model kamu (misal: Buku, Barang, Pengaduan, dsb.)
+
+/**
+ * ============================================================================
+ * CONTOH CONTROLLER MASTER DATA (BLUEPRINT CRUD UJIKOM)
+ * ============================================================================
+ * Controller ini dirancang sebagai kerangka acuan utama untuk operasi CRUD:
+ * - Create  : create() & store()
+ * - Read    : index() & show()
+ * - Update  : edit() & update()
+ * - Delete  : destroy()
+ * 
+ * 💡 TIPS UJIKOM:
+ * Ganti alias 'ContohModel' di bawah ini dengan Model soal ujian Anda
+ * Contoh: use App\Models\Buku as ContohModel;
+ *         use App\Models\Mobil as ContohModel;
+ * ============================================================================
+ */
 use App\Models\User as ContohModel;
 
 class ContohController extends Controller
 {
     /**
-     * Menampilkan daftar data dengan pencarian dan pagination.
+     * Menampilkan daftar data dengan fitur pencarian dan paginasi.
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
+        // 1. Tangkap kata kunci pencarian dari input form GET (?search=...)
         $search = $request->input('search');
 
+        // 2. Inisialisasi query Eloquent
         $query = ContohModel::query();
 
+        // 3. Terapkan filter jika user memasukkan kata kunci pencarian
         if ($search) {
             $query->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
         }
 
+        // 4. Urutkan dari data terbaru dan batasi 10 item per halaman
+        // withQueryString() menjaga parameter pencarian tetap ada saat berpindah halaman
         $items = $query->latest()->paginate(10)->withQueryString();
 
+        // 5. Kirim data ke tampilan view master.index
         return view('master.index', compact('items', 'search'));
     }
 
     /**
-     * Menampilkan form tambah data baru.
+     * Menampilkan formulir untuk menambahkan data baru.
+     * 
+     * @return \Illuminate\View\View
      */
     public function create()
     {
         return view('master.form', [
-            'item'   => new ContohModel(),
-            'isEdit' => false,
+            'item'   => new ContohModel(), // Objek kosong untuk nilai default form
+            'isEdit' => false,             // Penanda status tambah baru
             'title'  => 'Tambah Data Baru',
             'action' => route('master.store'),
             'method' => 'POST'
@@ -42,57 +69,78 @@ class ContohController extends Controller
     }
 
     /**
-     * Menyimpan data baru ke database.
+     * Menyimpan data baru ke dalam database.
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
+        // 1. Validasi input: memastikan integritas dan keamanan data yang masuk
         $validated = $request->validate([
             'nama'       => 'required|string|max:255',
             'keterangan' => 'nullable|string',
-            // Sesuaikan aturan validasi kolom lain di sini
+            // Tambahkan aturan validasi kolom lain di sini sesuai soal
         ], [
-            'nama.required' => 'Nama wajib diisi.',
+            // Pesan error kustom berbahasa Indonesia
+            'nama.required' => 'Nama data wajib diisi.',
+            'nama.max'      => 'Nama data maksimal 255 karakter.',
         ]);
 
-        // Simpan data
+        // 2. Eksekusi penyimpanan ke database
+        // CATATAN: Karena model default adalah User, password default otomatis disertakan
+        // agar tidak terjadi error MySQL: "Field password doesn't have a default value".
         ContohModel::create([
-            'name'  => $validated['nama'],
-            'email' => strtolower(str_replace(' ', '', $validated['nama'])) . '@example.com', // contoh
+            'name'     => $validated['nama'],
+            'email'    => strtolower(str_replace(' ', '', $validated['nama'])) . rand(100, 999) . '@ujikom.test',
+            'password' => bcrypt('password123'), // Password default untuk data contoh
+            'role'     => 'user',
         ]);
 
+        // 3. Alihkan kembali ke halaman tabel dengan notifikasi flash session berhasil
         return redirect()->route('master.index')->with('success', 'Data baru berhasil ditambahkan!');
     }
 
     /**
-     * Menampilkan form edit data.
+     * Menampilkan formulir untuk mengubah (edit) data yang sudah ada.
+     * 
+     * @param  int|string  $id
+     * @return \Illuminate\View\View
      */
     public function edit($id)
     {
+        // Temukan data berdasarkan ID atau lempar 404 jika tidak ditemukan
         $item = ContohModel::findOrFail($id);
 
         return view('master.form', [
             'item'   => $item,
-            'isEdit' => true,
-            'title'  => 'Edit Data: ' . $item->name,
+            'isEdit' => true, // Penanda status edit data
+            'title'  => 'Edit Data: ' . ($item->name ?? 'Item'),
             'action' => route('master.update', $item->id),
-            'method' => 'PUT'
+            'method' => 'PUT' // Method spoofing untuk HTTP PUT
         ]);
     }
 
     /**
      * Memperbarui data yang ada di database.
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int|string  $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
         $item = ContohModel::findOrFail($id);
 
+        // 1. Validasi input pembaruan
         $validated = $request->validate([
             'nama'       => 'required|string|max:255',
             'keterangan' => 'nullable|string',
         ], [
-            'nama.required' => 'Nama wajib diisi.',
+            'nama.required' => 'Nama data wajib diisi.',
         ]);
 
+        // 2. Simpan perubahan ke database
         $item->update([
             'name' => $validated['nama'],
         ]);
@@ -102,6 +150,9 @@ class ContohController extends Controller
 
     /**
      * Menghapus data dari database.
+     * 
+     * @param  int|string  $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {

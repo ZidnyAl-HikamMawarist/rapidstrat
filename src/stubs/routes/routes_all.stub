@@ -1,0 +1,61 @@
+
+// =========================================================================
+// 🚀 RUTE SISTEM RAPIDSTRAT (Multi-Role, Dashboard, Laporan & Master Data)
+// =========================================================================
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ContohController;
+
+// -------------------------------------------------------------------------
+// 1. RUTE TAMU / PUBLIK (Hanya dapat diakses jika pengguna BELUM login)
+// -------------------------------------------------------------------------
+Route::middleware('guest')->group(function () {
+    // Alihkan halaman utama langsung ke form login
+    Route::get('/', function () {
+        return redirect()->route('login');
+    });
+
+    // Autentikasi Pengguna (Login & Register)
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+});
+
+// -------------------------------------------------------------------------
+// 2. RUTE LOGOUT (Hanya dapat diakses setelah login)
+// -------------------------------------------------------------------------
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// -------------------------------------------------------------------------
+// 3. PORTAL PENGGUNA PUBLIK (Role: User / Siswa / Pelanggan)
+// -------------------------------------------------------------------------
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
+});
+
+// -------------------------------------------------------------------------
+// 4. PANEL ADMINISTRATOR & PETUGAS (Role: Admin & Petugas)
+// Dilindungi middleware role untuk memastikan pengguna biasa tidak bisa masuk
+// -------------------------------------------------------------------------
+Route::middleware(['auth', 'role:admin,petugas'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])->name('dashboard');
+});
+
+// -------------------------------------------------------------------------
+// 5. MODUL CETAK LAPORAN (Filter Tanggal, Export PDF & Print View)
+// -------------------------------------------------------------------------
+Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
+    Route::get('/reports/print', [ReportController::class, 'printView'])->name('reports.print');
+});
+
+// -------------------------------------------------------------------------
+// 6. RESOURCE MASTER DATA (CRUD Lengkap: Index, Create, Store, Edit, Update, Destroy)
+// -------------------------------------------------------------------------
+Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
+    Route::resource('master', ContohController::class);
+});

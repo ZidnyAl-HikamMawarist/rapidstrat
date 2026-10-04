@@ -6,18 +6,36 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 
+/**
+ * ============================================================================
+ * CONTROLLER ENGINE LAPORAN & REKAPITULASI (PDF & CETAK BROWSER)
+ * ============================================================================
+ * Menangani kebutuhan cetak laporan yang wajib ada di setiap soal UKK/UjiKom:
+ * 1. Filter data berdasarkan rentang tanggal (start_date s/d end_date)
+ * 2. Preview tabel data hasil filter di halaman web
+ * 3. Export dokumen resmi ke format PDF menggunakan package DomPDF
+ * 4. Fallback cetak langsung melalui dialog print browser (window.print)
+ * 
+ * 💡 TIPS UJIKOM:
+ * Ganti model 'User' dengan Model Transaksi kamu (misal: Peminjaman / Transaksi)
+ * ============================================================================
+ */
 class ReportController extends Controller
 {
     /**
-     * Tampilkan halaman filter laporan.
+     * Menampilkan halaman preview laporan dan formulir filter tanggal.
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
+        // 1. Tentukan tanggal default: awal bulan ini s/d hari ini
         $startDate = $request->input('start_date', date('Y-m-01'));
         $endDate   = $request->input('end_date', date('Y-m-d'));
 
-        // Query data berdasarkan filter tanggal
-        // CATATAN UJIKOM: Ganti User::query() dengan Model Transaksi kamu (misal: Peminjaman::query(), Transaksi::query(), Pengaduan::query())
+        // 2. Query data dengan filter rentang tanggal pada kolom 'created_at'
+        // CATATAN: Ganti User::query() dengan Model Transaksi kamu saat ujian
         $query = User::query();
 
         if ($startDate && $endDate) {
@@ -27,45 +45,54 @@ class ReportController extends Controller
             ]);
         }
 
+        // 3. Batasi 15 baris per halaman dan pertahankan filter query saat pindah pagination
         $records = $query->latest()->paginate(15)->withQueryString();
 
         return view('reports.index', compact('records', 'startDate', 'endDate'));
     }
 
     /**
-     * Export data ke file PDF menggunakan DomPDF.
+     * Menghasilkan dokumen unduhan PDF resmi menggunakan Barryvdh/DomPDF.
+     * Jika package belum terpasang, sistem otomatis mengalihkan ke tampilan cetak browser.
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\View\View
      */
     public function exportPdf(Request $request)
     {
         $startDate = $request->input('start_date', date('Y-m-01'));
         $endDate   = $request->input('end_date', date('Y-m-d'));
 
-        // Ganti User::query() dengan Model Transaksi kamu
-        $query = User::query();
+        // Query data keseluruhan (tanpa pagination) untuk dicetak ke PDF
+        $records = User::whereBetween('created_at', [
+            $startDate . ' 00:00:00',
+            $endDate . ' 23:59:59'
+        ])->latest()->get();
 
-        if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [
-                $startDate . ' 00:00:00',
-                $endDate . ' 23:59:59'
-            ]);
-        }
-
-        $records = $query->latest()->get();
-
-        // Cek apakah package DomPDF terpasang
+        // 1. Periksa apakah package DomPDF sudah terpasang
         if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            // Render view blade ke format PDF ukuran kertas A4 Portrait
             $pdf = Pdf::loadView('reports.pdf_template', compact('records', 'startDate', 'endDate'))
                       ->setPaper('a4', 'portrait');
 
+            // Picu unduhan file ke komputer pengguna
             return $pdf->download("laporan-rekapitulasi-{$startDate}-sd-{$endDate}.pdf");
         }
 
-        // Fallback jika DomPDF belum di-install: arahkan ke tampilan print browser
-        return view('reports.pdf_template', compact('records', 'startDate', 'endDate'));
+        // 2. Fallback cerdas: Jika belum ada DomPDF, buka template dengan trigger print browser
+        return view('reports.pdf_template', [
+            'records'   => $records,
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+            'autoPrint' => true
+        ]);
     }
 
     /**
      * Tampilan cetak langsung via Browser (window.print).
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function printView(Request $request)
     {
@@ -77,6 +104,11 @@ class ReportController extends Controller
             $endDate . ' 23:59:59'
         ])->latest()->get();
 
-        return view('reports.pdf_template', compact('records', 'startDate', 'endDate'));
+        return view('reports.pdf_template', [
+            'records'   => $records,
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+            'autoPrint' => true
+        ]);
     }
 }
